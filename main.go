@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"github.com/hauke96/sigolo"
 	"github.com/jasonlvhit/gocron"
 	"log"
 	"net/http"
@@ -11,9 +12,11 @@ import (
 var conf *Config
 
 func executeCronJob() {
-	processM3u8(conf)
-
-	gocron.Every(1).Hour().Do(processM3u8)
+	err := processM3u8(conf)
+	if err != nil {
+		sigolo.Info(err.Error())
+	}
+	gocron.Every(uint64(conf.CacheTime)).Minute().Do(processM3u8)
 	<-gocron.Start()
 }
 
@@ -24,13 +27,17 @@ func main() {
 		log.Fatal(err)
 		return
 	}
-
+	sigolo.Info("starting up")
 	go executeCronJob()
 
 	http.HandleFunc("/iptv.m3u", ServeM3u)
 	http.Handle("/icons/", http.StripPrefix("/icons/", http.FileServer(http.Dir("icons"))))
 
-	http.ListenAndServe(":65341", nil)
+	err = http.ListenAndServe(":65341", nil)
+	if err != nil {
+		log.Fatal(err)
+		return
+	}
 }
 
 func ServeM3u(w http.ResponseWriter, r *http.Request) {
