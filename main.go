@@ -6,6 +6,8 @@ import (
 	"github.com/jasonlvhit/gocron"
 	"log"
 	"net/http"
+	"net/http/httputil"
+	"net/url"
 	"path"
 )
 
@@ -31,6 +33,7 @@ func main() {
 	go executeCronJob()
 
 	http.HandleFunc("/iptv.m3u", ServeM3u)
+	http.HandleFunc("/epg", ServeEpg)
 	http.Handle("/icons/", http.StripPrefix("/icons/", http.FileServer(http.Dir("icons"))))
 
 	err = http.ListenAndServe(":65341", nil)
@@ -46,4 +49,26 @@ func ServeM3u(w http.ResponseWriter, r *http.Request) {
 	fp := path.Join("iptv.m3u")
 
 	http.ServeFile(w, r, fp)
+}
+
+func ServeEpg(w http.ResponseWriter, r *http.Request) {
+	fmt.Println("serving epg")
+
+	remote, err := url.Parse(conf.epgURL)
+	if err != nil {
+		log.Print(err.Error())
+		return
+	}
+
+	proxy := httputil.NewSingleHostReverseProxy(remote)
+
+	proxy.Director = func(req *http.Request) {
+		req.Header = r.Header
+		req.Host = remote.Host
+		req.URL.Scheme = remote.Scheme
+		req.URL.Host = remote.Host
+		req.URL.Path = remote.Path
+	}
+
+	proxy.ServeHTTP(w, r)
 }

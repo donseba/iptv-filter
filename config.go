@@ -10,6 +10,7 @@ import (
 type Config struct {
 	Target    string
 	publicURL string
+	epgURL    string
 	Include   []string
 	CacheTime int
 }
@@ -24,6 +25,12 @@ func LoadConfig() (*Config, error) {
 	publicURL := os.Getenv("PUBLIC_URL")
 	if publicURL == "" {
 		sigolo.Fatal("env PUBLIC_URL is required")
+		return nil, nil
+	}
+
+	epgURL := os.Getenv("EPG_URL")
+	if publicURL == "" {
+		sigolo.Fatal("env EPG_URL is required")
 		return nil, nil
 	}
 
@@ -53,6 +60,7 @@ func LoadConfig() (*Config, error) {
 	return &Config{
 		Target:    target,
 		publicURL: publicURL,
+		epgURL:    epgURL,
 		Include:   includeCategories,
 		CacheTime: cacheTime,
 	}, nil
